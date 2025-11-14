@@ -4,6 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = "integracion-continua:${env.BUILD_NUMBER}"
         CONTAINER_NAME = "integracion-continua-${env.BUILD_NUMBER}"
+        // Puerto dinámico basado en el número de build
+        DEPLOY_PORT = "80${env.BUILD_NUMBER}"
     }
     
     stages {
@@ -69,28 +71,6 @@ pipeline {
             }
         }
         
-        stage('Limpieza de Puerto') {
-            steps {
-                echo "Limpiando puerto 8081..."
-                sh '''
-                    # Buscar contenedor que usa el puerto 8081
-                    CONTAINER_ID=$(docker ps -q --filter "publish=8081")
-                    if [ ! -z "$CONTAINER_ID" ]; then
-                        echo "Deteniendo contenedor $CONTAINER_ID que usa puerto 8081"
-                        docker stop $CONTAINER_ID
-                        docker rm $CONTAINER_ID
-                        echo "Puerto 8081 liberado"
-                    else
-                        echo "Puerto 8081 disponible"
-                    fi
-                    
-                    # Limpiar contenedor actual si existe
-                    docker stop integracion-continua-24 || true
-                    docker rm integracion-continua-24 || true
-                '''
-            }
-        }
-        
         stage('Construcción Docker') {
             steps {
                 echo "Construyendo imagen Docker..."
@@ -116,24 +96,29 @@ pipeline {
         stage('Despliegue') {
             steps {
                 echo "Desplegando contenedor..."
+                script {
+                    // Usar un puerto que casi nunca esté ocupado
+                    env.DEPLOY_PORT = "80${currentBuild.number}"
+                }
                 sh """
+                    echo "Usando puerto: ${env.DEPLOY_PORT}"
+                    
+                    # Solo limpiar contenedores que pertenezcan a este usuario
                     docker stop ${env.CONTAINER_NAME} || true
                     docker rm ${env.CONTAINER_NAME} || true
                     
-                    docker run -d --name ${env.CONTAINER_NAME} -p 8081:80 ${env.DOCKER_IMAGE}
+                    # Desplegar en puerto único
+                    docker run -d --name ${env.CONTAINER_NAME} -p ${env.DEPLOY_PORT}:80 ${env.DOCKER_IMAGE}
                     sleep 5
                     
                     echo "Verificando estado del contenedor:"
-                    docker ps | grep ${env.CONTAINER_NAME} || echo "Contenedor no encontrado en ps"
-                    
-                    echo "Todos los contenedores:"
-                    docker ps -a | grep ${env.CONTAINER_NAME} || echo "Contenedor no existe"
+                    docker ps | grep ${env.CONTAINER_NAME} || echo "Contenedor no encontrado"
                 """
             }
             post {
                 success {
                     echo "Contenedor desplegado exitosamente"
-                    echo "Aplicación disponible en: http://localhost:8081"
+                    echo "Aplicación disponible en: http://localhost:${env.DEPLOY_PORT}"
                 }
             }
         }
@@ -144,10 +129,10 @@ pipeline {
                 sh """
                     sleep 8
                     
-                    if curl -f http://localhost:8081 > /dev/null 2>&1; then
-                        echo "Aplicación respondiendo correctamente en puerto 8081"
+                    if curl -f http://localhost:${env.DEPLOY_PORT} > /dev/null 2>&1; then
+                        echo "Aplicación respondiendo correctamente en puerto ${env.DEPLOY_PORT}"
                         echo "Contenido de la página:"
-                        curl -s http://localhost:8081 | head -n 5
+                        curl -s http://localhost:${env.DEPLOY_PORT} | head -n 5
                     else
                         echo "Aplicación no responde - puede ser normal en entornos de prueba"
                         docker logs ${env.CONTAINER_NAME} || echo "No se pueden ver logs del contenedor"
@@ -166,6 +151,7 @@ pipeline {
             echo "Número de build: ${currentBuild.number}"
             echo "Contenedor: ${env.CONTAINER_NAME}"
             echo "Imagen: ${env.DOCKER_IMAGE}"
+            echo "URL: http://localhost:${env.DEPLOY_PORT}"
             echo "================================"
             
             sh 'rm -f Main.java Main.class 2>/dev/null || true'
