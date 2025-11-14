@@ -80,8 +80,8 @@ pipeline {
                     docker rm ${env.CONTAINER_NAME} || true
                     
                     # Liberar puerto si está ocupado por otro contenedor
-                    docker stop $(docker ps -q --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
-                    docker rm $(docker ps -aq --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
+                    docker stop \\$(docker ps -q --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
+                    docker rm \\$(docker ps -aq --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
                     
                     echo "Puerto ${env.DEPLOY_PORT} liberado para uso"
                 """
