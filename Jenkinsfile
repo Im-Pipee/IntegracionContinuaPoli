@@ -9,25 +9,25 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "📦 INICIANDO PIPELINE DE INTEGRACIÓN CONTINUA"
-                echo "📦 Descargando código fuente del repositorio..."
+                echo "INICIANDO PIPELINE DE INTEGRACIÓN CONTINUA"
+                echo "Descargando código fuente del repositorio..."
                 checkout scm
                 sh 'git log -1 --oneline'
             }
             post {
                 success {
-                    echo "✅ Checkout completado exitosamente"
+                    echo "Checkout completado exitosamente"
                 }
             }
         }
         
         stage('Compilación') {
             steps {
-                echo "🔨 Compilando la aplicación..."
+                echo "Compilando la aplicación..."
                 sh '''
                     echo "Simulando compilación Java..."
                     mkdir -p target/classes
-                    echo "✅ Compilación exitosa - archivos en target/"
+                    echo "Compilación exitosa - archivos en target/"
                     ls -la
                 '''
             }
@@ -35,18 +35,18 @@ pipeline {
         
         stage('Pruebas Unitarias') {
             steps {
-                echo "🧪 Ejecutando pruebas unitarias..."
+                echo "Ejecutando simulación pruebas unitarias..."
                 sh '''
                     echo "Ejecutando tests..."
                     echo "Tests unitarios pasados: 15/15"
-                    echo "Coverage: 85%"
+                    echo "Covertura: 85%"
                     mkdir -p test-reports
                     echo '<?xml version="1.0" encoding="UTF-8"?>
                     <testsuite name="UnitTests" tests="15" failures="0" errors="0">
-                        <testcase name="testExample1" classname="TestSuite" time="0.1"/>
-                        <testcase name="testExample2" classname="TestSuite" time="0.2"/>
+                        <testcase name="Test1Simulado" classname="TestSuite" time="0.1"/>
+                        <testcase name="Test2Simulado" classname="TestSuite" time="0.2"/>
                     </testsuite>' > test-reports/test-results.xml
-                    echo "✅ Reporte de tests generado"
+                    echo "Reporte de tests generado"
                 '''
             }
             post {
@@ -58,25 +58,25 @@ pipeline {
         
         stage('Análisis de Calidad') {
             steps {
-                echo "📊 Analizando calidad del código..."
+                echo "Analizando calidad del código..."
                 sh '''
                     echo "Realizando análisis estático..."
                     echo "Code Smells: 2"
                     echo "Bugs: 0"
                     echo "Vulnerabilidades: 0"
-                    echo "✅ Calidad del código: APROBADA"
+                    echo "Calidad del código: APROBADA"
                 '''
             }
         }
         
         stage('Construcción Docker') {
             steps {
-                echo "🐳 Construyendo imagen Docker..."
+                echo "Construyendo imagen Docker..."
                 sh """
                     if [ -f "Dockerfile" ]; then
                         echo "Encontrado Dockerfile existente"
                         docker build -t ${env.DOCKER_IMAGE} .
-                        echo "✅ Imagen Docker construida: ${env.DOCKER_IMAGE}"
+                        echo "Imagen Docker construida: ${env.DOCKER_IMAGE}"
                         docker images | grep integracion-continua || echo "Imagen no listada"
                     else
                         echo "No se encontró Dockerfile - creando uno básico..."
@@ -85,7 +85,7 @@ pipeline {
                         echo "COPY . /usr/share/nginx/html/" >> Dockerfile
                         echo "EXPOSE 80" >> Dockerfile
                         docker build -t ${env.DOCKER_IMAGE} .
-                        echo "✅ Imagen Docker construida con Dockerfile básico"
+                        echo "Imagen Docker construida con Dockerfile básico"
                     fi
                 """
             }
@@ -93,7 +93,7 @@ pipeline {
         
         stage('Despliegue') {
             steps {
-                echo "🚀 Desplegando contenedor..."
+                echo "Desplegando contenedor..."
                 sh """
                     docker stop ${env.CONTAINER_NAME} || true
                     docker rm ${env.CONTAINER_NAME} || true
@@ -110,15 +110,15 @@ pipeline {
             }
             post {
                 success {
-                    echo "✅ Contenedor desplegado exitosamente"
-                    echo "🌐 Aplicación disponible en: http://localhost:8081"
+                    echo "Contenedor desplegado exitosamente"
+                    echo "Aplicación disponible en: http://localhost:8081"
                 }
             }
         }
         
         stage('Verificación') {
             steps {
-                echo "🔍 Verificando despliegue..."
+                echo "Verificando despliegue..."
                 sh """
                     sleep 8
                     
@@ -137,7 +137,7 @@ pipeline {
     
     post {
         always {
-            echo "📋 RESUMEN DEL PIPELINE"
+            echo "RESUMEN DEL PIPELINE"
             echo "================================"
             echo "Estado final: ${currentBuild.result ?: 'SUCCESS'}"
             echo "Duración: ${currentBuild.durationString}"
@@ -150,14 +150,14 @@ pipeline {
         }
         
         success {
-            echo "🎉 ¡PIPELINE COMPLETADO EXITOSAMENTE!"
-            echo "✅ Todas las etapas pasaron correctamente"
-            echo "📦 Aplicación desplegada y funcionando"
+            echo "PIPELINE COMPLETADO EXITOSAMENTE"
+            echo "Todas las etapas pasaron correctamente"
+            echo "Aplicación desplegada y funcionando"
         }
         
         failure {
-            echo "💥 PIPELINE FALLIDO"
-            echo "❌ Revisar los logs para identificar el error"
+            echo "PIPELINE FALLIDO"
+            echo "Revisar los logs para identificar el error"
         }
     }
 }
