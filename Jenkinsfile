@@ -79,14 +79,20 @@ pipeline {
                     docker stop ${env.CONTAINER_NAME} || true
                     docker rm ${env.CONTAINER_NAME} || true
                     
-                    # Verificar si hay contenedores usando el puerto y limpiarlos
-                    docker ps -q --filter "publish=${env.DEPLOY_PORT}" > /tmp/containers.txt || true
-                    if [ -s /tmp/containers.txt ]; then
+                    # Buscar contenedores que usen el puerto objetivo
+                    docker ps --format "{{.Names}} {{.Ports}}" | grep ":${env.DEPLOY_PORT}->" | cut -d' ' -f1 > containers_to_clean.txt || true
+                    
+                    # Limpiar contenedores encontrados
+                    if [ -s containers_to_clean.txt ]; then
                         echo "Limpiando contenedores que usan el puerto ${env.DEPLOY_PORT}"
-                        docker stop $(cat /tmp/containers.txt) || true
-                        docker rm $(cat /tmp/containers.txt) || true
+                        while read container; do
+                            docker stop "$container" || true
+                            docker rm "$container" || true
+                        done < containers_to_clean.txt
                     fi
-                    rm -f /tmp/containers.txt
+                    
+                    # Limpiar archivo temporal
+                    rm -f containers_to_clean.txt
                     
                     echo "Puerto ${env.DEPLOY_PORT} liberado para uso"
                 """
