@@ -79,9 +79,14 @@ pipeline {
                     docker stop ${env.CONTAINER_NAME} || true
                     docker rm ${env.CONTAINER_NAME} || true
                     
-                    # Liberar puerto si está ocupado por otro contenedor
-                    docker stop \\$(docker ps -q --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
-                    docker rm \\$(docker ps -aq --filter "publish=${env.DEPLOY_PORT}") 2>/dev/null || true
+                    # Verificar si hay contenedores usando el puerto y limpiarlos
+                    docker ps -q --filter "publish=${env.DEPLOY_PORT}" > /tmp/containers.txt || true
+                    if [ -s /tmp/containers.txt ]; then
+                        echo "Limpiando contenedores que usan el puerto ${env.DEPLOY_PORT}"
+                        docker stop $(cat /tmp/containers.txt) || true
+                        docker rm $(cat /tmp/containers.txt) || true
+                    fi
+                    rm -f /tmp/containers.txt
                     
                     echo "Puerto ${env.DEPLOY_PORT} liberado para uso"
                 """
@@ -121,9 +126,6 @@ pipeline {
                     
                     echo "Verificando estado del contenedor:"
                     docker ps --format "table {{.Names}}\\t{{.Ports}}\\t{{.Status}}" | grep ${env.CONTAINER_NAME} || echo "Contenedor no listado"
-                    
-                    echo "Todos los contenedores:"
-                    docker ps -a | grep ${env.CONTAINER_NAME} || echo "Contenedor no existe"
                 """
             }
             post {
